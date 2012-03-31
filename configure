@@ -12197,7 +12197,7 @@ $as_echo "#define HAVE_STDARG_PROTOTYPES 1" >>confdefs.h
 fi
 
 
-ac_config_files="$ac_config_files Makefile onig-config sample/Makefile"
+ac_config_files="$ac_config_files Makefile onig-config libonig.pc sample/Makefile"
 
 ac_config_commands="$ac_config_commands default"
 
@@ -13212,6 +13212,7 @@ do
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "onig-config") CONFIG_FILES="$CONFIG_FILES onig-config" ;;
+    "libonig.pc") CONFIG_FILES="$CONFIG_FILES libonig.pc" ;;
     "sample/Makefile") CONFIG_FILES="$CONFIG_FILES sample/Makefile" ;;
     "default") CONFIG_COMMANDS="$CONFIG_COMMANDS default" ;;
 

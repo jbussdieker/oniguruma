@@ -89,4 +89,4 @@ if test "$_cv_stdarg" = yes; then
 fi
 
 
-AC_OUTPUT([Makefile onig-config sample/Makefile], [chmod +x onig-config])
+AC_OUTPUT([Makefile onig-config libonig.pc sample/Makefile], [chmod +x onig-config])

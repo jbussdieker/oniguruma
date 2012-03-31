@@ -1,12 +1,12 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-includedir=@includedir@
 libdir=@libdir@
+includedir=@includedir@
 
 Name: oniguruma
 Description: regular expression library
 URL: http://geocities.com
 Version: @PACKAGE_VERSION@
-Cflags: -I${includedir}
 Libs: -L${libdir} -lonig
-Libs.private: @KRB5_LDFLAGS@ @KRB5_LIBS@
+Cflags: -I${includedir}
+

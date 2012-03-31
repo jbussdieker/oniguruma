@@ -11,18 +11,9 @@ SUBDIRS = . sample
 
 include_HEADERS = oniguruma.h oniggnu.h onigposix.h
 lib_LTLIBRARIES = $(libname)
-pkgconfigdir = $(libdir)/pkgconfig
-nodist_pkgconfig_DATA = libonig.pc
 
-libonig.pc: $(srcdir)/libonig.pc.in
-	sed -e 's![@]prefix[@]!$(prefix)!g' \
-		-e 's![@]exec_prefix[@]!$(exec_prefix)!g' \
-		-e 's![@]includedir[@]!$(includedir)!g' \
-		-e 's![@]libdir[@]!$(libdir)!g' \
-		-e 's![@]PACKAGE_VERSION[@]!$(PACKAGE_VERSION)!g' \
-		-e 's![@]KRB5_LDFLAGS[@]!$(KRB5_LDFLAGS)!g' \
-		-e 's![@]KRB5_LIBS[@]!$(KRB5_LIBS)!g' \
-		$(srcdir)/libonig.pc.in > $@
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libonig.pc
 
 libonig_la_SOURCES = regint.h regparse.h regenc.h st.h \
 	regerror.c regparse.c regext.c regcomp.c regexec.c reggnu.c \
@@ -50,7 +41,7 @@ EXTRA_DIST = HISTORY README.ja index.html index_ja.html \
 	$(encdir)/koi8.c $(encdir)/mktable.c \
 	$(sampledir)/encode.c $(sampledir)/listcap.c $(sampledir)/names.c \
 	$(sampledir)/posix.c $(sampledir)/simple.c $(sampledir)/sql.c \
-	$(sampledir)/syntax.c
+	$(sampledir)/syntax.c $(srcdir)/libonig.pc.in
 
 bin_SCRIPTS = onig-config
 
