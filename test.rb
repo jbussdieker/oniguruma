@@ -1,6 +1,11 @@
 # test.rb
 # Copyright (C) 2003-2006  K.Kosako (sndgk393 AT ybb DOT ne DOT jp)
 
+$SILENT = false
+if (ARGV.size > 0 and ARGV[0] == '-s')
+  $SILENT = true
+end
+
 def pr(result, reg, str, n = 0, *range)
   printf("%s /%s/:'%s'", result, reg.source, str)
   if (n.class == Fixnum)
@@ -21,7 +26,7 @@ end
 def rok(result_opt, reg, str, n = 0, *range)
   result = "OK" + result_opt
   result += " " * (7 - result.length) 
-  pr(result, reg, str, n, *range)
+  pr(result, reg, str, n, *range) unless $SILENT
   $rok += 1
 end
 
@@ -82,6 +87,7 @@ end
 ### main ###
 $rok = $rfail = 0
 
+
 x(/\M-Z/n, "\xDA", 0, 1)
 
 # from URI::ABS_URI
@@ -123,16 +129,16 @@ x(/\c\\/, "\034", 0, 1)
 x(/q[\c\\]/, "q\034", 0, 2)
 x(//, 'a', 0, 0)
 x(/a/, 'a', 0, 1)
+x(/\x61/, 'a', 0, 1)
 x(/aa/, 'aa', 0, 2)
 x(/aaa/, 'aaa', 0, 3)
 x(/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 0, 35)
 x(/ab/, 'ab', 0, 2)
 x(/b/, 'ab', 1, 2)
 x(/bc/, 'abc', 1, 3)
+x(/(?i:#RET#)/, '#INS##RET#', 5, 10)
 x(/\17/, "\017", 0, 1)
 x(/\x1f/, "\x1f", 0, 1)
-x(/\xFE/, "\xfe", 0, 1)
-x(/\w+/, "%a\xff\xfe%", 1, 2)
 x(/a(?#....\\JJJJ)b/, 'ab', 0, 2)
 x(Regexp.new("(?x)\ta .\n+b"), '0a123b4', 1, 6)
 x(/(?x)  G (o O(?-x)oO) g L/, "GoOoOgLe", 0, 7)
@@ -204,7 +210,7 @@ x(/[^[^abc]&&[^cde]]/, 'c', 0, 1)
 x(/[^[^abc]&&[^cde]]/, 'e', 0, 1)
 n(/[^[^abc]&&[^cde]]/, 'f')
 x(/[a-&&-a]/, '-', 0, 1)
-n(/[a-&&-a]/, '&')
+n(/[a\-&&\-a]/, '&')
 n(/\wabc/, ' abc')
 x(/a\Wbc/, 'a bc', 0, 4)
 x(/a.b.c/, 'aabbc', 0, 5)
@@ -225,6 +231,7 @@ x(/\A\Z/, '', 0, 0)
 x(/\Axyz/, 'xyz', 0, 3)
 x(/xyz\Z/, 'xyz', 0, 3)
 x(/xyz\z/, 'xyz', 0, 3)
+x(/a\Z/, 'a', 0, 1)
 x(/\Gaz/, 'az', 0, 2)
 n(/\Gz/, 'bza')
 n(/az\G/, 'az')
@@ -260,6 +267,7 @@ x(/(?i:\?a)/, '?A', 0, 2)
 x(/(?i:\*A)/, '*a', 0, 2)
 n(/./, "\n")
 x(/(?m:.)/, "\n", 0, 1)
+x(/(?m:a.)/, "a\n", 0, 2)
 x(/(?m:.b)/, "a\nb", 1, 3)
 x(/.*abc/, "dddabdd\nddabc", 8, 13)
 x(/(?m:.*abc)/, "dddabddabc", 0, 10)
@@ -284,6 +292,10 @@ x(/.*/, '', 0, 0)
 x(/.*/, 'abcde', 0, 5)
 x(/.+/, 'z', 0, 1)
 x(/.+/, "zdswer\n", 0, 6)
+x(/(.*)a\1f/, "babfbac", 0, 4)
+x(/(.*)a\1f/, "bacbabf", 3, 7)
+x(/((.*)a\2f)/, "bacbabf", 3, 7)
+x(/(.*)a\1f/, "baczzzzzz\nbazz\nzzzzbabf", 19, 23)
 x(/a|b/, 'a', 0, 1)
 x(/a|b/, 'b', 0, 1)
 x(/|a/, 'a', 0, 0)
@@ -542,13 +554,14 @@ r(/(((.a)))\3/, 'zazaaa', 0)
 r(/(ac*?z)\1/, 'aacczacczacz', 1)
 r(/aaz{3,4}/, 'bbaabbaazzzaazz', 6)
 r(/\000a/, "b\000a", 1)
-r(/ff\xfe/, "fff\xfe", 1)
+r(/ff\xfe\x00/, "fff\xfe\x00", 1)
 r(/...abcdefghijklmnopqrstuvwxyz/, 'zzzzzabcdefghijklmnopqrstuvwxyz', 2)
 end
 
 def test_euc(enc)
 $KCODE = enc
 
+x(/\xED\xF2/, "\xed\xf2", 0, 2)
 x(//, 'あ', 0, 0)
 x(/あ/, 'あ', 0, 2)
 n(/い/, 'あ')
@@ -864,6 +877,9 @@ test_euc('EUC')
 # UTF-8   (by UENO Katsuhiro)
 $KCODE = 'UTF-8'
 
+x(/\w/u, "\xc3\x81", 0, 2)
+n(/\W/u, "\xc3\x81")
+x(/[\w]/u, "\xc3\x81", 0, 2)
 x(/./u, "\xfe", 0, 1)
 x(/\xfe/u, "\xfe", 0, 1)
 x(/\S*/u, "\xfe", 0, 1)
@@ -907,8 +923,25 @@ x(/[^\xc4\x80-\xed\x9f\xbe]/u, s, 0, 3)
 s = "\xc3\xbe\xc3\xbf"
 n(/[\xfe\xff\xc3\x80]/u, s)
 
+s = "\xc3\xbe"
+x(/[\xc2\xa0-\xc3\xbe]/u, s, 0, 2)
+
 s = "sssss"
 x(/s+/iu, s, 0, 5)
+
+s = "SSSSS"
+x(/s+/iu, s, 0, 5)
+
+reg = Regexp.new("\\x{fb40}", nil, 'u')
+x(reg, "\357\255\200", 0, 3)
+x(/\A\w\z/u, "\357\255\200", 0, 3)
+x(/\A\W\z/u, "\357\255\202", 0, 3)
+n(/\A\w\z/u, "\357\255\202")
+
+x(/\303\200/iu, "\303\240", 0, 2)
+x(/\303\247/iu, "\303\207", 0, 2)
+
+
 
 # Japanese long text.
 $KCODE = 'EUC'
@@ -1048,6 +1081,23 @@ EOS
 
 x(/國語教室/, s, 800, 808)
 x(/ゐたわけです/, s, 176, 188)
+
+s = <<EOS
+ロジェストウェンスキーの日本海海戦について、公にされた説明は
+これだけである。言外に、対馬東水道に、与えられた戦力で入る限り、
+初めから勝利は不可能だった、と伝えている。
+あるいはニコライ二世に対する厳しい非難を含むつもりだったのかも
+しれない。
+これ以降、ロシアの日本海海戦についての論評は、
+「主砲発射速度」「下瀬火薬」「徹甲弾使用」などに、敗因を帰す
+ようになった。
+
+別宮暖朗 「「坂の上の雲」では分からない日本海海戦」 並木書房 (2005)
+EOS
+
+x(/\A(.*)の日本海海戦について/, s, 0, 22, 1)
+x(/「(.*?)」[^「]*「(.+?)」[^「]*「(?:.*?)」/, s, 290, 332)
+x(/海{1,2}(?=戦)/, s, 28, 32)
 
 # result
 printf("\n*** SUCCESS: %d,  FAIL: %d    Ruby %s (%s) [%s] ***\n",

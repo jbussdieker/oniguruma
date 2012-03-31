@@ -13,8 +13,8 @@ extern int main(int argc, char* argv[])
   OnigErrorInfo einfo;
   OnigRegion *region;
 
-  static unsigned char* pattern = (unsigned char* )"a(.*)b|[e-f]+";
-  static unsigned char* str = (unsigned char* )"zzzzaffffffffb";
+  static UChar* pattern = (UChar* )"a(.*)b|[e-f]+";
+  static UChar* str     = (UChar* )"zzzzaffffffffb";
 
   r = onig_new(&reg, pattern, pattern + strlen((char* )pattern),
 	ONIG_OPTION_DEFAULT, ONIG_ENCODING_ASCII, ONIG_SYNTAX_DEFAULT, &einfo);

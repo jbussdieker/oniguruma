@@ -25,12 +25,13 @@ libname   = $(libbase)_s.lib
 dllname   = $(libbase).dll
 dlllib    = $(libbase).lib
 
-onigheaders  = oniguruma.h regint.h regparse.h regenc.h
+onigheaders  = oniguruma.h regint.h regparse.h regenc.h st.h
 posixheaders = onigposix.h
 headers      = $(posixheaders) $(onigheaders)
 
-onigobjs     = reggnu.obj regerror.obj regparse.obj regcomp.obj \
-	       regexec.obj regenc.obj regsyntax.obj regversion.obj
+onigobjs     = reggnu.obj regerror.obj regparse.obj regext.obj regcomp.obj \
+	       regexec.obj regenc.obj regsyntax.obj regtrav.obj \
+	       regversion.obj st.obj
 posixobjs    = regposix.obj regposerr.obj
 libobjs      = $(onigobjs) $(posixobjs)
 
@@ -45,22 +46,25 @@ iso8859_objs =  $(encdir)\iso8859_1.obj  $(encdir)\iso8859_2.obj \
 		$(encdir)\iso8859_16.obj
 
 encobjs      =  $(encdir)\ascii.obj $(encdir)\utf8.obj \
+		$(encdir)\unicode.obj \
+		$(encdir)\utf16_be.obj $(encdir)\utf16_le.obj \
+		$(encdir)\utf32_be.obj $(encdir)\utf32_le.obj \
 		$(jp_objs) $(iso8859_objs) \
-		$(encdir)\euc_tw.obj $(encdir)\euc_kr.obj \
-		$(encdir)\koi8.obj $(encdir)\koi8_r.obj \
-		$(encdir)\big5.obj
+		$(encdir)\euc_tw.obj $(encdir)\euc_kr.obj $(encdir)\big5.obj \
+		$(encdir)\gb18030.obj \
+		$(encdir)\koi8_r.obj  # $(encdir)\koi8.obj
 
-onigsources  = regerror.c regparse.c regcomp.c regexec.c regenc.c \
-	       regsyntax.c regversion.c reggnu.c
+onigsources  = regerror.c regparse.c regext.c regcomp.c regexec.c regenc.c \
+	       regsyntax.c regtrav.c regversion.c reggnu.c st.c
 posixsources = regposix.c regposerr.c
 libsources   = $(posixsources) $(onigsources)
-rubysources  = regex.c $(onigsources)
+rubysources  = $(onigsources)
 
 encdir       = enc
-patchfiles   = re.c.168.patch re.c.182.patch re.c.183.patch
-distfiles    = README COPYING INSTALL-RUBY HISTORY \
+patchfiles   = re.c.168.patch re.c.181.patch
+distfiles    = README COPYING HISTORY \
 		Makefile.in configure.in config.h.in configure \
-		$(headers) $(libsources) regex.c $(patchfiles) \
+		$(headers) $(libsources) $(patchfiles) \
 		test.rb testconv.rb
 testc        = testc
 testp        = testp
@@ -89,19 +93,27 @@ $(libname): $(libobjs) $(encobjs)
 $(dllname): $(libobjs) $(encobjs)
 	$(ARDLL) $(libobjs) $(encobjs) -Fe$@ $(ARDLL_FLAGS)
 
-regparse.obj: regparse.c $(onigheaders) config.h
-regcomp.obj:  regcomp.c  $(onigheaders) config.h
-regexec.obj:  regexec.c  regint.h regenc.h oniguruma.h config.h
-reggnu.obj:   reggnu.c   regint.h regenc.h oniguruma.h config.h oniggnu.h
-regerror.obj: regerror.c regint.h regenc.h oniguruma.h config.h
-regenc.obj:   regenc.c   regenc.h oniguruma.h config.h
-regsyntax.obj:  regsyntax.c regint.h regenc.h oniguruma.h config.h
-regversion.obj: regversion.c oniguruma.h
-regposix.obj:   regposix.c $(posixheaders) oniguruma.h config.h
-regposerr.obj:  regposerr.c $(posixheaders) config.h
+regparse.obj:  regparse.c $(onigheaders) config.h st.h
+regext.obj:    regext.c   $(onigheaders) config.h
+regtrav.obj:   regtrav.c  $(onigheaders) config.h
+regcomp.obj:   regcomp.c  $(onigheaders) config.h
+regexec.obj:   regexec.c  regint.h regenc.h oniguruma.h config.h
+reggnu.obj:    reggnu.c   regint.h regenc.h oniguruma.h config.h oniggnu.h
+regerror.obj:  regerror.c regint.h regenc.h oniguruma.h config.h
+regenc.obj:    regenc.c   regenc.h oniguruma.h config.h
+regsyntax.obj: regsyntax.c regint.h regenc.h oniguruma.h config.h
+regversion.obj: regversion.c oniguruma.h config.h
+regposix.obj:  regposix.c $(posixheaders) oniguruma.h config.h
+regposerr.obj: regposerr.c $(posixheaders) config.h
+st.obj:        st.c regint.h oniguruma.h config.h st.h
 
 $(encdir)\ascii.obj:      $(encdir)\ascii.c regenc.h config.h
+$(encdir)\unicode.obj:    $(encdir)\unicode.c regenc.h config.h
 $(encdir)\utf8.obj:       $(encdir)\utf8.c regenc.h config.h
+$(encdir)\utf16_be.obj:   $(encdir)\utf16_be.c regenc.h config.h
+$(encdir)\utf16_le.obj:   $(encdir)\utf16_le.c regenc.h config.h
+$(encdir)\utf32_be.obj:   $(encdir)\utf32_be.c regenc.h config.h
+$(encdir)\utf32_le.obj:   $(encdir)\utf32_le.c regenc.h config.h
 $(encdir)\euc_jp.obj:     $(encdir)\euc_jp.c regenc.h config.h
 $(encdir)\euc_tw.obj:     $(encdir)\euc_tw.c regenc.h config.h
 $(encdir)\euc_kr.obj:     $(encdir)\euc_kr.c regenc.h config.h
@@ -124,6 +136,7 @@ $(encdir)\iso8859_16.obj: $(encdir)\iso8859_16.c regenc.h config.h
 $(encdir)\koi8.obj:       $(encdir)\koi8.c   regenc.h config.h
 $(encdir)\koi8_r.obj:     $(encdir)\koi8_r.c regenc.h config.h
 $(encdir)\big5.obj:       $(encdir)\big5.c   regenc.h config.h
+$(encdir)\gb18030.obj:    $(encdir)\gb18030.c   regenc.h config.h
 
 
 # Ruby test
@@ -144,57 +157,36 @@ $(testc): $(testc).c $(libname)
 $(testp): $(testc).c $(dlllib)
 	$(CC) -nologo -DPOSIX_TEST -o $(testp) $(testc).c $(dlllib)
 
+$(testc)u.c: test.rb testconvu.rb
+	ruby -Ke testconvu.rb test.rb > $@
+
+$(testc)u: $(testc)u.c $(libname)
+	$(CC) -nologo -o $(testc)u -DONIG_EXTERN=extern $(testc)u.c $(libname)
+
 clean:
 	del *.obj $(encdir)\*.obj *.lib *.exp *.dll $(testp).exe $(testc).exe $(testc).obj
 
 
-16: cpruby
-	patch -d $(RUBYDIR) -p0 < re.c.168.patch
-
-182: cpruby
-	patch -d $(RUBYDIR) -p0 < re.c.182.patch
-
-183: cpruby
-	patch -d $(RUBYDIR) -p0 < re.c.183.patch
-
-184: cpruby
-	patch -d $(RUBYDIR) -p0 < re.c.184.patch
-
-18: 184
-
 # backup file suffix
 SORIG = ruby_orig
 
-cpruby:
-	$(CP) $(RUBYDIR)\regex.c $(RUBYDIR)\regex.c.$(SORIG)
-	$(CP) $(RUBYDIR)\regex.h $(RUBYDIR)\regex.h.$(SORIG)
-	$(CP) $(RUBYDIR)\re.c    $(RUBYDIR)\re.c.$(SORIG)
-# $(rubysources)
-	$(CP) regex.c      $(RUBYDIR)
+# ruby 1.9 source update
+19:
 	$(CP) regerror.c   $(RUBYDIR)
 	$(CP) regparse.c   $(RUBYDIR)
 	$(CP) regcomp.c    $(RUBYDIR)
 	$(CP) regexec.c    $(RUBYDIR)
 	$(CP) regenc.c     $(RUBYDIR)
-	$(CP) reggnu.c     $(RUBYDIR)
-# $(onigheaders)
-	$(CP) oniguruma.h  $(RUBYDIR)
-	$(CP) oniggnu.h    $(RUBYDIR)\regex.h
 	$(CP) regint.h     $(RUBYDIR)
 	$(CP) regparse.h   $(RUBYDIR)
 	$(CP) regenc.h     $(RUBYDIR)
-# enc
-	mkdir $(RUBYDIR)\$(encdir)
-	$(CP) $(encdir)\ascii.c   $(RUBYDIR)\$(encdir)
-	$(CP) $(encdir)\utf8.c    $(RUBYDIR)\$(encdir)
-	$(CP) $(encdir)\euc_jp.c  $(RUBYDIR)\$(encdir)
-	$(CP) $(encdir)\sjis.c    $(RUBYDIR)\$(encdir)
+	$(CP) oniguruma.h  $(RUBYDIR)
+	mkdir $(RUBYDIR)\enc
+	$(CP) enc\ascii.c  $(RUBYDIR)
+	$(CP) enc\utf8.c   $(RUBYDIR)
+	$(CP) enc\euc_jp.c $(RUBYDIR)
+	$(CP) enc\sjis.c   $(RUBYDIR)
 
-rback:
-	$(CP) $(RUBYDIR)\regex.c.$(SORIG) $(RUBYDIR)\regex.c
-	$(CP) $(RUBYDIR)\regex.h.$(SORIG) $(RUBYDIR)\regex.h
-	$(CP) $(RUBYDIR)\re.c.$(SORIG)    $(RUBYDIR)\re.c
-	rmdir /S $(RUBYDIR)\$(encdir)
 
 samples: all
 	$(CC) $(CFLAGS) -I. -o simple  sample\simple.c  $(dlllib)

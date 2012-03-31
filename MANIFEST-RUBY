@@ -1,11 +1,9 @@
-oniggnu.h
 oniguruma.h
 regcomp.c
 regenc.c
 regenc.h
 regerror.c
 regexec.c
-reggnu.c
 regint.h
 regparse.c
 regparse.h

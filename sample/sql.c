@@ -14,22 +14,26 @@ extern int main(int argc, char* argv[])
   regex_t* reg;
   OnigErrorInfo einfo;
   OnigRegion *region;
+  static OnigEncodingType new_enc;
 
-  static unsigned char* pattern = (unsigned char* )"\\_%\\\\__zz";
-  static unsigned char* str = (unsigned char* )"a_abcabcabc\\ppzz";
+  static UChar* pattern = (UChar* )"\\_%\\\\__zz";
+  static UChar* str = (UChar* )"a_abcabcabc\\ppzz";
 
   onig_set_syntax_op      (&SQLSyntax, ONIG_SYN_OP_VARIABLE_META_CHARACTERS);
   onig_set_syntax_op2     (&SQLSyntax, 0);
   onig_set_syntax_behavior(&SQLSyntax, 0);
   onig_set_syntax_options (&SQLSyntax, ONIG_OPTION_MULTILINE);
 
-  onig_set_meta_char(ONIG_META_CHAR_ANYCHAR,         (OnigCodePoint )'_');
-  onig_set_meta_char(ONIG_META_CHAR_ANYCHAR_ANYTIME, (OnigCodePoint )'%');
+  onig_copy_encoding(&new_enc, ONIG_ENCODING_ASCII);
+  onig_set_meta_char(&new_enc, ONIG_META_CHAR_ANYCHAR, (OnigCodePoint )'_');
+  onig_set_meta_char(&new_enc, ONIG_META_CHAR_ANYCHAR_ANYTIME, (OnigCodePoint )'%');
+#if 0
   /* set @ as escape char. */
-  /* onig_set_meta_char(ONIG_META_CHAR_ESCAPE, (OnigCodePoint )'@'); */
+  onig_set_meta_char(&new_enc, ONIG_META_CHAR_ESCAPE, (OnigCodePoint )'@');
+#endif
 
   r = onig_new(&reg, pattern, pattern + strlen((char* )pattern),
-	       ONIG_OPTION_DEFAULT, ONIG_ENCODING_ASCII, &SQLSyntax, &einfo);
+	       ONIG_OPTION_DEFAULT, &new_enc, &SQLSyntax, &einfo);
   if (r != ONIG_NORMAL) {
     char s[ONIG_MAX_ERROR_MESSAGE_LEN];
     onig_error_code_to_str(s, r, &einfo);

@@ -1,10 +1,32 @@
 /**********************************************************************
-
   regerror.c -  Oniguruma (regular expression library)
-
-  Copyright (C) 2002-2005  K.Kosako (sndgk393 AT ybb DOT ne DOT jp)
-
 **********************************************************************/
+/*-
+ * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
 #include "regint.h"
 #include <stdio.h> /* for vsnprintf() */
 
@@ -16,12 +38,12 @@
 #define va_init_list(a,b) va_start(a)
 #endif
 
-extern char*
+extern UChar*
 onig_error_code_to_format(int code)
 {
   char *p;
 
-  if (code >= 0) return (char* )0;
+  if (code >= 0) return (UChar* )0;
 
   switch (code) {
   case ONIG_MISMATCH:
@@ -56,8 +78,8 @@ onig_error_code_to_format(int code)
     p = "empty char-class"; break;
   case ONIGERR_PREMATURE_END_OF_CHAR_CLASS:
     p = "premature end of char-class"; break;
-  case ONIGERR_END_PATTERN_AT_BACKSLASH:
-    p = "end pattern at backslash"; break;
+  case ONIGERR_END_PATTERN_AT_ESCAPE:
+    p = "end pattern at escape"; break;
   case ONIGERR_END_PATTERN_AT_META:
     p = "end pattern at meta"; break;
   case ONIGERR_END_PATTERN_AT_CONTROL:
@@ -146,6 +168,10 @@ onig_error_code_to_format(int code)
     p = "group number is too big for capture history"; break;
   case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
     p = "invalid character property name {%n}"; break;
+  case ONIGERR_NOT_SUPPORTED_ENCODING_COMBINATION:
+    p = "not supported encoding combination"; break;
+  case ONIGERR_INVALID_COMBINATION_OF_OPTIONS:
+    p = "invalid combination of options"; break;
   case ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT:
     p = "over thread pass limit count"; break;
 
@@ -153,7 +179,49 @@ onig_error_code_to_format(int code)
     p = "undefined error code"; break;
   }
 
-  return p;
+  return (UChar* )p;
+}
+
+
+static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
+		    UChar buf[], int buf_size, int *is_over)
+{
+  int len;
+  UChar *p;
+  OnigCodePoint code;
+
+  if (ONIGENC_MBC_MINLEN(enc) > 1) {
+    p = s;
+    len = 0;
+    while (p < end) {
+      code = ONIGENC_MBC_TO_CODE(enc, p, end);
+      if (code >= 0x80) {
+	if (len + 5 <= buf_size) {
+	  sprintf((char* )(&(buf[len])), "\\%03o",
+		  (unsigned int)(code & 0377));
+	  len += 5;
+	}
+	else {
+	  break;
+	}
+      }
+      else {
+	buf[len++] = (UChar )code;
+      }
+
+      p += enc_len(enc, p);
+      if (len >= buf_size) break;
+    }
+
+    *is_over = ((p < end) ? 1 : 0);
+  }
+  else {
+    len = MIN((end - s), buf_size);
+    xmemcpy(buf, s, (size_t )len);
+    *is_over = ((buf_size < (end - s)) ? 1 : 0);
+  }
+
+  return len;
 }
 
 
@@ -172,7 +240,8 @@ onig_error_code_to_str(s, code, va_alist)
 {
   UChar *p, *q;
   OnigErrorInfo* einfo;
-  int len;
+  int len, is_over;
+  UChar parbuf[MAX_ERROR_PAR_LEN];
   va_list vargs;
 
   va_init_list(vargs, code);
@@ -186,22 +255,19 @@ onig_error_code_to_str(s, code, va_alist)
   case ONIGERR_INVALID_CHAR_IN_GROUP_NAME:
   case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
     einfo = va_arg(vargs, OnigErrorInfo*);
-    len = einfo->par_end - einfo->par;
-    q = (UChar* )onig_error_code_to_format(code);
+    len = to_ascii(einfo->enc, einfo->par, einfo->par_end,
+		   parbuf, MAX_ERROR_PAR_LEN - 3, &is_over);
+    q = onig_error_code_to_format(code);
     p = s;
     while (*q != '\0') {
       if (*q == '%') {
 	q++;
 	if (*q == 'n') { /* '%n': name */
-	  if (len > MAX_ERROR_PAR_LEN) {
-	    xmemcpy(p, einfo->par, MAX_ERROR_PAR_LEN - 3);
-	    p += (MAX_ERROR_PAR_LEN - 3);
+	  xmemcpy(p, parbuf, len);
+	  p += len;
+	  if (is_over != 0) {
 	    xmemcpy(p, "...", 3);
 	    p += 3;
-	  }
-	  else {
-	    xmemcpy(p, einfo->par, len);
-	    p += len;
 	  }
 	  q++;
 	}
@@ -218,8 +284,8 @@ onig_error_code_to_str(s, code, va_alist)
     break;
 
   default:
-    q = (UChar* )onig_error_code_to_format(code);
-    len = strlen((char* )q);
+    q = onig_error_code_to_format(code);
+    len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, q);
     xmemcpy(s, q, len);
     s[len] = '\0';
     break;
@@ -232,54 +298,67 @@ onig_error_code_to_str(s, code, va_alist)
 
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-onig_snprintf_with_pattern(char buf[], int bufsize, OnigEncoding enc,
-			    char* pat, char* pat_end, char *fmt, ...)
+onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
+                           UChar* pat, UChar* pat_end, const UChar *fmt, ...)
 #else
 onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
-    char buf[];
+    UChar buf[];
     int bufsize;
     OnigEncoding enc;
-    char* pat;
-    char* pat_end;
-    const char *fmt;
+    UChar* pat;
+    UChar* pat_end;
+    const UChar *fmt;
     va_dcl
 #endif
 {
   int n, need, len;
-  UChar *p, *s;
+  UChar *p, *s, *bp;
+  UChar bs[6];
   va_list args;
 
   va_init_list(args, fmt);
-  n = vsnprintf(buf, bufsize, fmt, args);
+  n = vsnprintf((char* )buf, bufsize, (const char* )fmt, args);
   va_end(args);
 
   need = (pat_end - pat) * 4 + 4;
 
   if (n + need < bufsize) {
-    strcat(buf, ": /");
-    s = (UChar* )(buf + strlen(buf));
+    strcat((char* )buf, ": /");
+    s = buf + onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, buf);
 
-    p = (UChar* )pat;
-    while (p < (UChar* )pat_end) {
-      if (*p == MC_ESC) {
+    p = pat;
+    while (p < pat_end) {
+      if (*p == MC_ESC(enc)) {
 	*s++ = *p++;
-	len = enc_len(enc, *p);
+	len = enc_len(enc, p);
 	while (len-- > 0) *s++ = *p++;
       }
       else if (*p == '/') {
-	*s++ = MC_ESC;
+	*s++ = (unsigned char )MC_ESC(enc);
 	*s++ = *p++;
       }
-      else if (ONIGENC_IS_MBC_HEAD(enc, *p)) {
-	len = enc_len(enc, *p);
-	while (len-- > 0) *s++ = *p++;
+      else if (ONIGENC_IS_MBC_HEAD(enc, p)) {
+        len = enc_len(enc, p);
+        if (ONIGENC_MBC_MINLEN(enc) == 1) {
+          while (len-- > 0) *s++ = *p++;
+        }
+        else { /* for UTF16 */
+          int blen;
+
+          while (len-- > 0) {
+            sprintf((char* )bs, "\\%03o", *p++ & 0377);
+            blen = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, bs);
+            bp = bs;
+            while (blen-- > 0) *s++ = *bp++;
+          }
+        }
       }
       else if (!ONIGENC_IS_CODE_PRINT(enc, *p) &&
 	       !ONIGENC_IS_CODE_SPACE(enc, *p)) {
-	char b[5];
-	sprintf(b, "\\%03o", *p & 0377);
-	len = strlen(b);
-	while (len-- > 0) *s++ = *p++;
+	sprintf((char* )bs, "\\%03o", *p++ & 0377);
+	len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, bs);
+        bp = bs;
+	while (len-- > 0) *s++ = *bp++;
       }
       else {
 	*s++ = *p++;

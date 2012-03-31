@@ -6,13 +6,15 @@
 #include "oniguruma.h"
 
 extern int exec(OnigSyntaxType* syntax,
-		unsigned char* pattern, unsigned char* str)
+		char* apattern, char* astr)
 {
   int r;
   unsigned char *start, *range, *end;
   regex_t* reg;
   OnigErrorInfo einfo;
   OnigRegion *region;
+  UChar* pattern = (UChar* )apattern;
+  UChar* str     = (UChar* )astr;
 
   r = onig_new(&reg, pattern, pattern + strlen((char* )pattern),
 	       ONIG_OPTION_DEFAULT, ONIG_ENCODING_ASCII, syntax, &einfo);
@@ -58,13 +60,15 @@ extern int main(int argc, char* argv[])
   int r;
 
   r = exec(ONIG_SYNTAX_PERL,
-	   (unsigned char* )"\\p{XDigit}\\P{XDigit}\\p{^XDigit}\\P{^XDigit}\\p{IsXDigit}",
-	   (unsigned char* )"bgh3a");
+	   "\\p{XDigit}\\P{XDigit}\\p{^XDigit}\\P{^XDigit}\\p{IsXDigit}",
+	   "bgh3a");
 
   r = exec(ONIG_SYNTAX_JAVA,
-	   (unsigned char* )"\\p{XDigit}\\P{XDigit}[a-c&&b-g]",
-	   (unsigned char* )"bgc");
+	   "\\p{XDigit}\\P{XDigit}[a-c&&b-g]", "bgc");
 
+  r = exec(ONIG_SYNTAX_ASIS,
+           "abc def* e+ g?ddd[a-rvvv] (vv){3,7}hv\\dvv(?:aczui ss)\\W\\w$",
+           "abc def* e+ g?ddd[a-rvvv] (vv){3,7}hv\\dvv(?:aczui ss)\\W\\w$");
   onig_end();
   return 0;
 }

@@ -6,7 +6,8 @@
 #include "oniguruma.h"
 
 static int
-name_callback(UChar* name, UChar* name_end, int ngroup_num, int* group_nums,
+name_callback(const UChar* name, const UChar* name_end,
+	      int ngroup_num, int* group_nums,
 	      regex_t* reg, void* arg)
 {
   int i, gn, ref;
@@ -31,9 +32,8 @@ extern int main(int argc, char* argv[])
   OnigErrorInfo einfo;
   OnigRegion *region;
 
-  static unsigned char* pattern =
-    (unsigned char* )"(?<foo>a*)(?<bar>b*)(?<foo>c*)";
-  static unsigned char* str = (unsigned char* )"aaabbbbcc";
+  static UChar* pattern = (UChar* )"(?<foo>a*)(?<bar>b*)(?<foo>c*)";
+  static UChar* str = (UChar* )"aaabbbbcc";
 
   r = onig_new(&reg, pattern, pattern + strlen((char* )pattern),
 	ONIG_OPTION_DEFAULT, ONIG_ENCODING_ASCII, ONIG_SYNTAX_DEFAULT, &einfo);
