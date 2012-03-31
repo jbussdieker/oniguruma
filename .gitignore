@@ -2,6 +2,7 @@
 .libs
 *~
 *.o
+*.lo
 missing
 ltmain.sh
 Makefile
@@ -20,3 +21,15 @@ autom4te.cache/
 config.h
 config.h.in
 stamp-h1
+onig-config
+libonig.la
+libonig.pc
+libtool
+sample/crnl
+sample/encode
+sample/listcap
+sample/names
+sample/posix
+sample/simple
+sample/sql
+sample/syntax
