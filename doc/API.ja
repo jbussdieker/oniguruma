@@ -1,4 +1,4 @@
-鬼車インターフェース Version 4.5.0   2006/11/06
+鬼車インターフェース Version 4.7.1   2007/07/04
 
 #include <oniguruma.h>
 
@@ -64,7 +64,7 @@
   4 option:      正規表現コンパイル時オプション
 
       ONIG_OPTION_NONE               オプションなし
-      ONIG_OPTION_SINGLELINE         '^' -> '\A', '$' -> '\z', '\Z' -> '\z'
+      ONIG_OPTION_SINGLELINE         '^' -> '\A', '$' -> '\Z'
       ONIG_OPTION_MULTILINE          '.'が改行にマッチする
       ONIG_OPTION_IGNORECASE         曖昧マッチ オン
       ONIG_OPTION_EXTEND             パターン拡張形式

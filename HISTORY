@@ -1,5 +1,13 @@
 History
 
+2007/08/16: Version 4.7.1
+
+2007/08/16: [test] success in ruby 1.9.0 (2007-04-06) [i686-linux].
+2007/07/04: [spec] (thanks K.Takata)
+                   ONIG_OPTION_SINGLELINE: '$' -> '\Z'  (as Perl)
+2007/07/04: [dist] (thanks K.Takata)
+                   fix documents API and API.ja.
+
 2007/06/18: Version 4.7.0
 
 2007/06/18: [test] success in ruby 1.9.0 (2007-04-06) [i686-linux].
